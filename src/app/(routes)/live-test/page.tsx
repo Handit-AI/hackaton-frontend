@@ -318,17 +318,19 @@ function LiveTest() {
       <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '2rem' }}>
         {/* Left Panel - Configuration */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Upload Section */}
-          <div style={{
-            background: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #f5f5f5'
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
-              Transaction Data
-            </h2>
+          
+          {/* Step 1: Upload Transaction (Always visible until uploaded) */}
+          {!transaction || Object.keys(transaction).length === 0 ? (
+            <div style={{
+              background: 'white',
+              borderRadius: '1rem',
+              padding: '2rem',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #f5f5f5'
+            }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
+                Upload Transaction
+              </h2>
 
             {/* Drag & Drop Area */}
             <div
@@ -512,22 +514,42 @@ function LiveTest() {
                 </div>
               </div>
             )}
+            
+            {error && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '0.75rem',
+                color: '#991b1b',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <AlertTriangle size={16} />
+                {error}
+              </div>
+            )}
           </div>
-
-          {/* Mode Selection */}
-          <div style={{
-            background: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #f5f5f5'
-          }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '0.75rem' }}>
-              Analysis Modes
-            </h2>
-            <p style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '1.5rem' }}>
-              Select one or more modes to compare
-            </p>
+          ) : (
+            /* Step 2: Show Analysis Options (After upload) */
+            <>
+              {/* Mode Selection */}
+              <div style={{
+                background: 'white',
+                borderRadius: '1rem',
+                padding: '2rem',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                border: '1px solid #f5f5f5'
+              }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '0.75rem' }}>
+                  Analysis Modes
+                </h2>
+                <p style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '1.5rem' }}>
+                  Select one or more modes to compare
+                </p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
@@ -604,54 +626,56 @@ function LiveTest() {
                 <span style={{ color: '#991b1b' }}>Select at least one mode</span>
               </div>
             )}
-          </div>
+              </div>
 
-          {/* Run Analysis Button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0}
-            style={{
-              width: '100%',
-              padding: '1.125rem',
-              background: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0
-                ? '#9ca3af'
-                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.75rem',
-              fontSize: '1rem',
-              fontWeight: 600,
-              cursor: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0 ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.75rem',
-              boxShadow: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0
-                ? 'none'
-                : '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
-              transition: 'all 0.2s',
-              opacity: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0 ? 0.6 : 1
-            }}
-          >
-            <Play size={20} fill="white" />
-            {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
-          </button>
+              {/* Run Analysis Button */}
+              <button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || modes.length === 0}
+                style={{
+                  width: '100%',
+                  padding: '1.125rem',
+                  background: isAnalyzing || modes.length === 0
+                    ? '#9ca3af'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.75rem',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  cursor: isAnalyzing || modes.length === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  boxShadow: isAnalyzing || modes.length === 0
+                    ? 'none'
+                    : '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+                  transition: 'all 0.2s',
+                  opacity: isAnalyzing || modes.length === 0 ? 0.6 : 1
+                }}
+              >
+                <Play size={20} fill="white" />
+                {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
+              </button>
 
-          {error && (
-            <div style={{
-              padding: '1rem',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '0.75rem',
-              color: '#991b1b',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <AlertTriangle size={16} />
-              {error}
-            </div>
+              {error && (
+                <div style={{
+                  padding: '1rem',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '0.75rem',
+                  color: '#991b1b',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <AlertTriangle size={16} />
+                  {error}
+                </div>
+              )}
+            </>
           )}
         </div>
 
