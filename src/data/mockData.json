@@ -1,0 +1,161 @@
+{
+  "fraudulent_transaction": {
+    "transaction": {
+      "user_id": "sketchy_alice",
+      "user_age_days": 8,
+      "total_transactions": 1,
+      "amount": 7500,
+      "time": "03:45",
+      "merchant": "CryptoCash Exchange",
+      "merchant_rating": 2.1,
+      "merchant_fraud_reports": 23,
+      "location": "Lagos, Nigeria",
+      "previous_location": "California, USA"
+    },
+    "decision": "DECLINE",
+    "confidence": 0.92,
+    "risk_score": 87.5,
+    "reasoning": "High-risk transaction detected: New user account (8 days), first transaction with high amount ($7,500), unusual merchant with low rating and multiple fraud reports, suspicious location change from USA to Nigeria, transaction at odd hours (3:45 AM).",
+    "analyzer_results": {
+      "PatternDetector": {
+        "name": "PatternDetector",
+        "risk_score": 85,
+        "findings": [
+          "First transaction on new account (high risk)",
+          "Unusually high transaction amount for new user",
+          "Transaction pattern matches known fraud signatures"
+        ],
+        "recommendation": "DECLINE",
+        "confidence": 0.88,
+        "reasoning": "New account with high-value first transaction raises red flags"
+      },
+      "BehavioralAnalyzer": {
+        "name": "BehavioralAnalyzer",
+        "risk_score": 92,
+        "findings": [
+          "User age only 8 days (very new account)",
+          "No transaction history to establish normal behavior",
+          "Sudden high-value transaction anomaly"
+        ],
+        "recommendation": "DECLINE",
+        "confidence": 0.95,
+        "reasoning": "Behavioral patterns indicate likely fraudulent activity"
+      },
+      "VelocityChecker": {
+        "name": "VelocityChecker",
+        "risk_score": 78,
+        "findings": [
+          "First transaction with no velocity data",
+          "Amount significantly higher than typical first transactions"
+        ],
+        "recommendation": "DECLINE",
+        "confidence": 0.82,
+        "reasoning": "Transaction velocity outside normal parameters"
+      },
+      "MerchantRiskAnalyzer": {
+        "name": "MerchantRiskAnalyzer",
+        "risk_score": 94,
+        "findings": [
+          "Merchant rating very low (2.1/5.0)",
+          "23 fraud reports associated with this merchant",
+          "Merchant in high-risk category (cryptocurrency exchange)"
+        ],
+        "recommendation": "DECLINE",
+        "confidence": 0.97,
+        "reasoning": "Merchant has extremely high fraud risk profile"
+      },
+      "GeographicAnalyzer": {
+        "name": "GeographicAnalyzer",
+        "risk_score": 88,
+        "findings": [
+          "Drastic location change: California, USA → Lagos, Nigeria",
+          "Transaction in high-risk geographic region",
+          "Transaction time suspicious for location (3:45 AM)"
+        ],
+        "recommendation": "DECLINE",
+        "confidence": 0.91,
+        "reasoning": "Geographic anomalies suggest potential account takeover"
+      }
+    }
+  },
+  "legitimate_transaction": {
+    "transaction": {
+      "user_id": "john_verified",
+      "user_age_days": 1250,
+      "total_transactions": 456,
+      "amount": 180,
+      "time": "14:30",
+      "merchant": "Amazon.com",
+      "merchant_rating": 4.8,
+      "merchant_fraud_reports": 0,
+      "location": "New York, USA",
+      "previous_location": "New York, USA"
+    },
+    "decision": "APPROVE",
+    "confidence": 0.94,
+    "risk_score": 15.2,
+    "reasoning": "Low-risk transaction: Established user account (1250 days), consistent transaction history (456 transactions), moderate amount ($180), reputable merchant with high rating and no fraud reports, consistent location usage.",
+    "analyzer_results": {
+      "PatternDetector": {
+        "name": "PatternDetector",
+        "risk_score": 12,
+        "findings": [
+          "Consistent transaction pattern with user history",
+          "Amount within normal range for this user",
+          "No suspicious patterns detected"
+        ],
+        "recommendation": "APPROVE",
+        "confidence": 0.92,
+        "reasoning": "Transaction aligns with established user patterns"
+      },
+      "BehavioralAnalyzer": {
+        "name": "BehavioralAnalyzer",
+        "risk_score": 8,
+        "findings": [
+          "User account well-established (1250 days)",
+          "Strong transaction history (456 transactions)",
+          "Behavior consistent with normal usage"
+        ],
+        "recommendation": "APPROVE",
+        "confidence": 0.96,
+        "reasoning": "Behavioral patterns indicate legitimate user activity"
+      },
+      "VelocityChecker": {
+        "name": "VelocityChecker",
+        "risk_score": 18,
+        "findings": [
+          "Transaction velocity within normal parameters",
+          "Amount consistent with historical average"
+        ],
+        "recommendation": "APPROVE",
+        "confidence": 0.89,
+        "reasoning": "No velocity anomalies detected"
+      },
+      "MerchantRiskAnalyzer": {
+        "name": "MerchantRiskAnalyzer",
+        "risk_score": 5,
+        "findings": [
+          "Merchant has excellent rating (4.8/5.0)",
+          "No fraud reports associated with merchant",
+          "Merchant is reputable and well-known"
+        ],
+        "recommendation": "APPROVE",
+        "confidence": 0.98,
+        "reasoning": "Merchant has excellent reputation and safety profile"
+      },
+      "GeographicAnalyzer": {
+        "name": "GeographicAnalyzer",
+        "risk_score": 10,
+        "findings": [
+          "Location consistent with previous transaction",
+          "Transaction time appropriate for location (2:30 PM)",
+          "No geographic anomalies detected"
+        ],
+        "recommendation": "APPROVE",
+        "confidence": 0.95,
+        "reasoning": "Geographic patterns indicate normal user behavior"
+      }
+    }
+  }
+}
+
