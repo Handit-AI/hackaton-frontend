@@ -8,7 +8,7 @@ interface ComparisonChartProps {
   // TODO: Define props for chart data
 }
 
-function ComparisonChart(props: ComparisonChartProps) {
+function ComparisonChart(_props: ComparisonChartProps) {
   return (
     <div>
       {/* TODO: Render line chart */}

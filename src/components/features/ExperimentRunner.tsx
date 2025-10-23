@@ -8,7 +8,7 @@ interface ExperimentRunnerProps {
   // TODO: Define props for experiment configuration
 }
 
-function ExperimentRunner(props: ExperimentRunnerProps) {
+function ExperimentRunner(_props: ExperimentRunnerProps) {
   return (
     <div>
       {/* TODO: Add experiment configuration form */}

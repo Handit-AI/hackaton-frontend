@@ -7,7 +7,7 @@ interface BulletCardProps {
   // TODO: Define props for bullet content
 }
 
-function BulletCard(props: BulletCardProps) {
+function BulletCard(_props: BulletCardProps) {
   return (
     <div>
       {/* TODO: Display bullet title */}

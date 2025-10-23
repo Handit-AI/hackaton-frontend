@@ -7,7 +7,7 @@ interface AgentAnalysisCardProps {
   // TODO: Define props for agent data
 }
 
-function AgentAnalysisCard(props: AgentAnalysisCardProps) {
+function AgentAnalysisCard(_props: AgentAnalysisCardProps) {
   return (
     <div>
       {/* TODO: Display agent name */}

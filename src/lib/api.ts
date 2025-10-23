@@ -4,15 +4,15 @@
 
 // Base API URL
 // TODO: Configure base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 // TODO: Implement function to fetch live test results
-export async function runLiveTest(params: any) {
+export async function runLiveTest(_params: any) {
   // TODO: Make API call to run live test
 }
 
 // TODO: Implement function to run experiments
-export async function runExperiment(config: any) {
+export async function runExperiment(_config: any) {
   // TODO: Make API call to run experiment
 }
 
@@ -22,7 +22,7 @@ export async function getPlaybookData() {
 }
 
 // TODO: Implement function to fetch agent analysis
-export async function getAgentAnalysis(id: string) {
+export async function getAgentAnalysis(_id: string) {
   // TODO: Make API call to fetch agent analysis
 }
 

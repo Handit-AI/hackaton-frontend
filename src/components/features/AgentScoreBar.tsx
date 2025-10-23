@@ -7,7 +7,7 @@ interface AgentScoreBarProps {
   // TODO: Define props for score and agent name
 }
 
-function AgentScoreBar(props: AgentScoreBarProps) {
+function AgentScoreBar(_props: AgentScoreBarProps) {
   return (
     <div>
       {/* TODO: Display agent name */}
