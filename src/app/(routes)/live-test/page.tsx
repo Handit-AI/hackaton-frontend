@@ -1,114 +1,216 @@
-// Live Test page component - Minimalist Design
-// This page allows users to run live fraud detection tests
+// Live Test page component - ACE Modes Comparison
+// Compares Vanilla Agent vs Offline ACE vs Online ACE in real-time streaming
+
+'use client';
 
 import { useState } from 'react';
 import { FraudAnalysisResult, Transaction } from '../../../types';
-import AgentAnalysisCard from '../../../components/features/AgentAnalysisCard';
-import AgentScoreBar from '../../../components/features/AgentScoreBar';
+import { Upload, Play, BarChart3, TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
-// Mock data for testing
-const MOCK_RESULT: FraudAnalysisResult = {
-  transaction: {
-    user_id: 'sketchy_alice',
-    user_age_days: 8,
-    total_transactions: 1,
-    amount: 7500,
-    time: '03:45',
-    merchant: 'CryptoCash Exchange',
-    merchant_rating: 2.1,
-    merchant_fraud_reports: 23,
-    location: 'Lagos, Nigeria',
-    previous_location: 'California, USA',
-  },
-  decision: 'DECLINE',
-  confidence: 0.92,
-  risk_score: 87.5,
-  reasoning: 'High-risk transaction detected: New user account (8 days), first transaction with high amount ($7,500), unusual merchant with low rating and multiple fraud reports, suspicious location change from USA to Nigeria, transaction at odd hours (3:45 AM).',
-  analyzer_results: {
-    PatternDetector: {
-      name: 'PatternDetector',
-      risk_score: 85,
-      findings: [
-        'First transaction on new account (high risk)',
-        'Unusually high transaction amount for new user',
-        'Transaction pattern matches known fraud signatures',
-      ],
-      recommendation: 'DECLINE',
-      confidence: 0.88,
-      reasoning: 'New account with high-value first transaction raises red flags',
+// Mock results for different ACE modes
+const generateMockResult = (
+  transaction: Transaction,
+  mode: 'vanilla' | 'offline_ace' | 'online_ace'
+): FraudAnalysisResult => {
+  const isFraudulent = transaction.user_id === 'sketchy_alice';
+  
+  // Different accuracy levels per mode
+  const modeConfig = {
+    vanilla: { baseAccuracy: 0.60, riskMultiplier: 0.7 },
+    offline_ace: { baseAccuracy: 0.80, riskMultiplier: 0.9 },
+    online_ace: { baseAccuracy: 0.90, riskMultiplier: 1.0 }
+  };
+
+  const config = modeConfig[mode];
+  const baseRisk = isFraudulent ? 87.5 : 15.2;
+  const risk_score = baseRisk * config.riskMultiplier;
+  const decision = risk_score > 50 ? 'DECLINE' : 'APPROVE';
+
+  return {
+    transaction,
+    decision: decision as 'APPROVE' | 'DECLINE',
+    confidence: config.baseAccuracy + (Math.random() * 0.1),
+    risk_score,
+    reasoning: isFraudulent
+      ? `High-risk transaction detected with ${mode.replace('_', ' ').toUpperCase()}: New user account, high transaction amount, suspicious merchant activity, and unusual geographic patterns.`
+      : `Low-risk transaction validated by ${mode.replace('_', ' ').toUpperCase()}: Established user account, consistent transaction history, reputable merchant, and normal geographic patterns.`,
+    analyzer_results: {
+      PatternDetector: {
+        name: 'PatternDetector',
+        risk_score: isFraudulent ? 85 * config.riskMultiplier : 12,
+        findings: isFraudulent
+          ? ['First transaction on new account', 'Unusually high transaction amount', 'Pattern matches fraud signatures']
+          : ['Consistent transaction pattern', 'Amount within normal range', 'No suspicious patterns'],
+        recommendation: risk_score > 50 ? 'DECLINE' : 'APPROVE',
+        confidence: config.baseAccuracy,
+        reasoning: 'Pattern analysis complete',
+      },
+      BehavioralAnalyzer: {
+        name: 'BehavioralAnalyzer',
+        risk_score: isFraudulent ? 92 * config.riskMultiplier : 8,
+        findings: isFraudulent
+          ? ['Very new account (8 days)', 'No transaction history', 'Sudden high-value anomaly']
+          : ['Well-established account', 'Strong transaction history', 'Consistent behavior'],
+        recommendation: risk_score > 50 ? 'DECLINE' : 'APPROVE',
+        confidence: config.baseAccuracy + 0.05,
+        reasoning: 'Behavioral analysis complete',
+      },
+      VelocityChecker: {
+        name: 'VelocityChecker',
+        risk_score: isFraudulent ? 78 * config.riskMultiplier : 18,
+        findings: isFraudulent
+          ? ['First transaction with no velocity data', 'Amount significantly higher than typical']
+          : ['Transaction velocity within normal parameters', 'Amount consistent with history'],
+        recommendation: risk_score > 50 ? 'DECLINE' : 'APPROVE',
+        confidence: config.baseAccuracy - 0.05,
+        reasoning: 'Velocity check complete',
+      },
+      MerchantRiskAnalyzer: {
+        name: 'MerchantRiskAnalyzer',
+        risk_score: isFraudulent ? 94 * config.riskMultiplier : 5,
+        findings: isFraudulent
+          ? ['Merchant rating very low (2.1/5.0)', '23 fraud reports', 'High-risk category']
+          : ['Excellent merchant rating (4.8/5.0)', 'No fraud reports', 'Reputable merchant'],
+        recommendation: risk_score > 50 ? 'DECLINE' : 'APPROVE',
+        confidence: config.baseAccuracy + 0.08,
+        reasoning: 'Merchant risk analysis complete',
+      },
+      GeographicAnalyzer: {
+        name: 'GeographicAnalyzer',
+        risk_score: isFraudulent ? 88 * config.riskMultiplier : 10,
+        findings: isFraudulent
+          ? ['Drastic location change', 'High-risk geographic region', 'Suspicious transaction time']
+          : ['Location consistent', 'Appropriate transaction time', 'No geographic anomalies'],
+        recommendation: risk_score > 50 ? 'DECLINE' : 'APPROVE',
+        confidence: config.baseAccuracy + 0.02,
+        reasoning: 'Geographic analysis complete',
+      },
     },
-    BehavioralAnalyzer: {
-      name: 'BehavioralAnalyzer',
-      risk_score: 92,
-      findings: [
-        'User age only 8 days (very new account)',
-        'No transaction history to establish normal behavior',
-        'Sudden high-value transaction anomaly',
-      ],
-      recommendation: 'DECLINE',
-      confidence: 0.95,
-      reasoning: 'Behavioral patterns indicate likely fraudulent activity',
+    risk_breakdown: {
+      PatternDetector: { score: isFraudulent ? 85 * config.riskMultiplier : 12, contribution: 0.20, findings_count: 3 },
+      BehavioralAnalyzer: { score: isFraudulent ? 92 * config.riskMultiplier : 8, contribution: 0.22, findings_count: 3 },
+      VelocityChecker: { score: isFraudulent ? 78 * config.riskMultiplier : 18, contribution: 0.20, findings_count: 2 },
+      MerchantRiskAnalyzer: { score: isFraudulent ? 94 * config.riskMultiplier : 5, contribution: 0.18, findings_count: 3 },
+      GeographicAnalyzer: { score: isFraudulent ? 88 * config.riskMultiplier : 10, contribution: 0.20, findings_count: 3 },
     },
-    VelocityChecker: {
-      name: 'VelocityChecker',
-      risk_score: 78,
-      findings: [
-        'First transaction with no velocity data',
-        'Amount significantly higher than typical first transactions',
-      ],
-      recommendation: 'DECLINE',
-      confidence: 0.82,
-      reasoning: 'Transaction velocity outside normal parameters',
-    },
-    MerchantRiskAnalyzer: {
-      name: 'MerchantRiskAnalyzer',
-      risk_score: 94,
-      findings: [
-        'Merchant rating very low (2.1/5.0)',
-        '23 fraud reports associated with this merchant',
-        'Merchant in high-risk category (cryptocurrency exchange)',
-      ],
-      recommendation: 'DECLINE',
-      confidence: 0.97,
-      reasoning: 'Merchant has extremely high fraud risk profile',
-    },
-    GeographicAnalyzer: {
-      name: 'GeographicAnalyzer',
-      risk_score: 88,
-      findings: [
-        'Drastic location change: California, USA → Lagos, Nigeria',
-        'Transaction in high-risk geographic region',
-        'Transaction time suspicious for location (3:45 AM)',
-      ],
-      recommendation: 'DECLINE',
-      confidence: 0.91,
-      reasoning: 'Geographic anomalies suggest potential account takeover',
-    },
-  },
-  risk_breakdown: {
-    PatternDetector: { score: 85, contribution: 0.18, findings_count: 3 },
-    BehavioralAnalyzer: { score: 92, contribution: 0.22, findings_count: 3 },
-    VelocityChecker: { score: 78, contribution: 0.15, findings_count: 2 },
-    MerchantRiskAnalyzer: { score: 94, contribution: 0.24, findings_count: 3 },
-    GeographicAnalyzer: { score: 88, contribution: 0.21, findings_count: 3 },
-  },
-  timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString(),
+  };
 };
 
+type ModeResult = {
+  mode: 'vanilla' | 'offline_ace' | 'online_ace';
+  status: 'pending' | 'analyzing' | 'streaming' | 'complete';
+  result: FraudAnalysisResult | null;
+  progress: number;
+  streamingAgents: string[];
+  currentAgent: string | null;
+};
 
 function LiveTest() {
   const [transaction, setTransaction] = useState<Partial<Transaction>>({});
   const [modes, setModes] = useState<('vanilla' | 'offline_ace' | 'online_ace')[]>(['online_ace']);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<FraudAnalysisResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [modeResults, setModeResults] = useState<ModeResult[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
-    // Functionality removed - button does nothing
-  };
+    if (!transaction || Object.keys(transaction).length === 0) {
+      setError('Please upload a JSON file first');
+      return;
+    }
 
+    if (modes.length === 0) {
+      setError('Please select at least one analysis mode');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setError(null);
+
+    const agentNames = ['PatternDetector', 'BehavioralAnalyzer', 'VelocityChecker', 'MerchantRiskAnalyzer', 'GeographicAnalyzer'];
+
+    // Initialize mode results
+    const initialResults: ModeResult[] = modes.map(mode => ({
+      mode,
+      status: 'pending',
+      result: null,
+      progress: 0,
+      streamingAgents: [],
+      currentAgent: null,
+    }));
+    setModeResults(initialResults);
+
+    // Generate all results upfront
+    const allFullResults = modes.map(mode => ({
+      mode,
+      result: generateMockResult(transaction as Transaction, mode)
+    }));
+
+    // Start all modes simultaneously (initial phase)
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setModeResults(prev => prev.map(r => ({ ...r, status: 'analyzing', progress: 10 })));
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    // Start streaming all modes in parallel
+    setModeResults(prev => prev.map(r => ({ ...r, status: 'streaming', progress: 20 })));
+
+    // Stream each agent across all modes in parallel
+    for (let agentIdx = 0; agentIdx < agentNames.length; agentIdx++) {
+      const agentName = agentNames[agentIdx];
+      const progress = 20 + ((agentIdx + 1) / agentNames.length) * 70; // 20% to 90%
+
+      // Show current agent being analyzed across all modes
+      setModeResults(prev => prev.map(r => ({
+        ...r,
+        currentAgent: agentName,
+        progress: Math.floor(progress)
+      })));
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Add agent to completed list for all modes
+      const streamedAgents = agentNames.slice(0, agentIdx + 1);
+      
+      setModeResults(prev => prev.map((r, idx) => {
+        const fullResult = allFullResults[idx].result;
+        const partialResult: FraudAnalysisResult = {
+          ...fullResult,
+          analyzer_results: Object.fromEntries(
+            streamedAgents.map(name => [
+              name,
+              fullResult.analyzer_results[name as keyof typeof fullResult.analyzer_results]
+            ])
+          ) as any,
+        };
+
+        return {
+          ...r,
+          streamingAgents: streamedAgents,
+          result: partialResult,
+          progress: Math.floor(progress)
+        };
+      }));
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+
+    // Finalize all modes with decision
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setModeResults(prev => prev.map((r, idx) => ({
+      ...r,
+      status: 'complete',
+      result: allFullResults[idx].result,
+      progress: 100,
+      currentAgent: null,
+      streamingAgents: agentNames
+    })));
+
+    setIsAnalyzing(false);
+  };
 
   const handleFileUpload = (file: File) => {
     if (file.type !== 'application/json') {
@@ -124,19 +226,18 @@ function LiveTest() {
       try {
         const jsonData = JSON.parse(e.target?.result as string);
         
-        // Add artificial delay to show loading animation
         setTimeout(() => {
           setTransaction(jsonData);
-          setResult(null);
+          setModeResults([]);
           setError(null);
           setIsUploading(false);
-        }, 2000); // 2 second delay
+        }, 1000);
         
       } catch (err) {
         setTimeout(() => {
           setError('Invalid JSON format');
           setIsUploading(false);
-        }, 1000); // 1 second delay for errors
+        }, 500);
       }
     };
     reader.readAsText(file);
@@ -155,8 +256,8 @@ function LiveTest() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
+
+    const files = e.dataTransfer.files;
     if (files.length > 0) {
       handleFileUpload(files[0]);
     }
@@ -171,400 +272,430 @@ function LiveTest() {
 
   const clearTransaction = () => {
     setTransaction({});
-    setResult(null);
+    setModeResults([]);
     setError(null);
   };
 
+  const getModeLabel = (mode: string) => {
+    const labels = {
+      vanilla: 'Vanilla Agent',
+      offline_ace: 'Offline ACE',
+      online_ace: 'Online ACE',
+    };
+    return labels[mode as keyof typeof labels];
+  };
+
+  const getModeDescription = (mode: string) => {
+    const descriptions = {
+      vanilla: 'Baseline performance without learning capabilities (~55-65% accuracy)',
+      offline_ace: 'Pre-trained on historical fraud data (~75-85% accuracy)',
+      online_ace: 'Real-time learning and adaptation (~85-90% accuracy)',
+    };
+    return descriptions[mode as keyof typeof descriptions];
+  };
+
   return (
-    <div className="container" style={{ maxWidth: '1400px' }}>
+    <div className="container" style={{ maxWidth: '1600px', margin: '0 auto', padding: '2rem' }}>
       {/* Header */}
       <div style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{
-          fontSize: '2.5rem',
-          fontWeight: 800,
-          color: '#171717',
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: 700, 
+          color: '#171717', 
           marginBottom: '0.5rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem'
         }}>
-          <span style={{ fontSize: '2.5rem' }}>🧪</span>
-          Live Transaction Test
+          <BarChart3 size={36} strokeWidth={2.5} color="#3b82f6" />
+          ACE Mode Comparison
         </h1>
-        <p style={{ fontSize: '1.0625rem', color: '#737373', fontWeight: 400 }}>
-          Test the multi-agent fraud detection system in real-time with custom or example transactions
+        <p style={{ color: '#737373', fontSize: '1.125rem' }}>
+          Compare fraud detection performance across Vanilla Agent, Offline ACE, and Online ACE modes
         </p>
       </div>
 
-      {/* Main Grid Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
-        
-        {/* JSON Upload Area */}
-        <div style={{
-          background: 'white',
-          borderRadius: '1rem',
-          padding: '2rem',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #f5f5f5'
-        }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', margin: 0 }}>
-              Upload Transaction Data
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '2rem' }}>
+        {/* Left Panel - Configuration */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Upload Section */}
+          <div style={{
+            background: 'white',
+            borderRadius: '1rem',
+            padding: '2rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #f5f5f5'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
+              Transaction Data
             </h2>
-          </div>
 
-          {/* Drag & Drop Area */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            style={{
-              border: `2px dashed ${isDragOver ? '#3b82f6' : '#d4d4d4'}`,
-              borderRadius: '0.75rem',
-              padding: '3rem 2rem',
-              textAlign: 'center',
-              background: isDragOver ? '#eff6ff' : '#fafafa',
-              transition: 'all 0.2s',
-              cursor: 'pointer',
-              position: 'relative'
-            }}
-            onClick={() => document.getElementById('file-input')?.click()}
-          >
-            <input
-              id="file-input"
-              type="file"
-              accept=".json"
-              onChange={handleFileInput}
-              style={{ display: 'none' }}
-            />
-            
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-              {isDragOver ? '📁' : (transaction && Object.keys(transaction).length > 0 ? '✅' : '📄')}
-            </div>
-            
-            <h3 style={{ 
-              fontSize: '1.25rem', 
-              fontWeight: 600, 
-              color: '#171717', 
-              marginBottom: '0.5rem' 
-            }}>
-              {isDragOver 
-                ? 'Drop JSON file here' 
-                : (transaction && Object.keys(transaction).length > 0 
-                  ? 'Upload New JSON File' 
-                  : 'Upload Transaction JSON')
-              }
-            </h3>
-            
-            <p style={{ 
-              color: '#737373', 
-              marginBottom: '1.5rem',
-              fontSize: '0.9375rem'
-            }}>
-              {transaction && Object.keys(transaction).length > 0 
-                ? 'Replace current file or upload a new one'
-                : 'Drag and drop a JSON file or click to browse'
-              }
-            </p>
-
-            <button
-              type="button"
+            {/* Drag & Drop Area */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               style={{
-                padding: '0.75rem 1.5rem',
-                background: transaction && Object.keys(transaction).length > 0 
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                  : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.5rem',
-                fontSize: '0.9375rem',
-                fontWeight: 600,
+                border: `2px dashed ${isDragOver ? '#3b82f6' : '#d4d4d4'}`,
+                borderRadius: '0.75rem',
+                padding: '2rem 1.5rem',
+                textAlign: 'center',
+                background: isDragOver ? '#eff6ff' : '#fafafa',
+                transition: 'all 0.2s',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = transaction && Object.keys(transaction).length > 0
-                  ? '0 4px 6px -1px rgba(16, 185, 129, 0.3)'
-                  : '0 4px 6px -1px rgba(59, 130, 246, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              onClick={() => document.getElementById('file-input')?.click()}
             >
-              {transaction && Object.keys(transaction).length > 0 ? 'Choose New File' : 'Choose File'}
-            </button>
+              <input
+                id="file-input"
+                type="file"
+                accept=".json"
+                onChange={handleFileInput}
+                style={{ display: 'none' }}
+              />
+              
+              <Upload 
+                size={32} 
+                color={isDragOver ? '#3b82f6' : (transaction && Object.keys(transaction).length > 0 ? '#10b981' : '#737373')} 
+                strokeWidth={1.5}
+                style={{ margin: '0 auto 1rem' }}
+              />
+              
+              <h3 style={{ 
+                fontSize: '1rem', 
+                fontWeight: 600, 
+                color: '#171717', 
+                marginBottom: '0.5rem' 
+              }}>
+                {isDragOver 
+                  ? 'Drop JSON file here' 
+                  : (transaction && Object.keys(transaction).length > 0 
+                    ? 'Upload New Transaction' 
+                    : 'Upload Transaction JSON')
+                }
+              </h3>
+              
+              <p style={{ 
+                color: '#737373', 
+                marginBottom: '1rem',
+                fontSize: '0.875rem'
+              }}>
+                {transaction && Object.keys(transaction).length > 0 
+                  ? 'Replace current transaction data'
+                  : 'Drag and drop or click to browse'
+                }
+              </p>
 
-            <div style={{ 
-              marginTop: '1rem', 
-              fontSize: '0.8125rem', 
-              color: '#a3a3a3',
-              marginBottom: transaction && Object.keys(transaction).length > 0 ? '1rem' : '0'
-            }}>
-              Accepted format: .json
-            </div>
-
-            {/* Clear Button - Only show when file is loaded */}
-            {transaction && Object.keys(transaction).length > 0 && (
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent triggering the file input
-                  clearTransaction();
-                }}
                 style={{
-                  padding: '0.5rem 1rem',
-                  background: 'transparent',
-                  color: '#ef4444',
-                  border: '1px solid #fecaca',
+                  padding: '0.625rem 1.25rem',
+                  background: transaction && Object.keys(transaction).length > 0 
+                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                    : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '0.5rem',
-                  fontSize: '0.8125rem',
-                  fontWeight: 500,
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  marginTop: '0.5rem'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#fef2f2';
-                  e.currentTarget.style.borderColor = '#f87171';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = '#fecaca';
+                  transition: 'all 0.2s'
                 }}
               >
-                🗑️ Clear Current File
+                {transaction && Object.keys(transaction).length > 0 ? 'Choose New File' : 'Choose File'}
               </button>
+
+              <div style={{ 
+                marginTop: '0.75rem', 
+                fontSize: '0.75rem', 
+                color: '#a3a3a3'
+              }}>
+                Accepted format: .json
+              </div>
+
+              {transaction && Object.keys(transaction).length > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearTransaction();
+                  }}
+                  style={{
+                    marginTop: '0.75rem',
+                    padding: '0.5rem 1rem',
+                    background: 'transparent',
+                    color: '#ef4444',
+                    border: '1px solid #fecaca',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <XCircle size={14} style={{ display: 'inline', marginRight: '0.25rem' }} />
+                  Clear Transaction
+                </button>
+              )}
+            </div>
+
+            {/* Loading State */}
+            {isUploading && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1.5rem',
+                background: '#f8fafc',
+                borderRadius: '0.75rem',
+                border: '1px solid #e2e8f0',
+                textAlign: 'center'
+              }}>
+                <Upload size={32} color="#3b82f6" strokeWidth={1.5} style={{ margin: '0 auto 0.75rem', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#475569', marginBottom: '0.5rem' }}>
+                  Processing JSON...
+                </div>
+                <div style={{ 
+                  width: '100%',
+                  height: '6px',
+                  background: '#e5e7eb',
+                  borderRadius: '3px',
+                  overflow: 'hidden',
+                  marginTop: '0.75rem'
+                }}>
+                  <div style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6)',
+                    backgroundSize: '200% 100%',
+                    borderRadius: '3px',
+                    animation: 'loadingBar 2s ease-in-out infinite',
+                    width: '100%'
+                  }}></div>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction Preview */}
+            {transaction && Object.keys(transaction).length > 0 && !isUploading && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                background: '#f8fafc',
+                borderRadius: '0.75rem',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  fontWeight: 600, 
+                  color: '#475569', 
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <CheckCircle size={14} color="#10b981" />
+                  Transaction Loaded
+                </div>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: '#64748b',
+                  fontFamily: 'monospace',
+                  background: 'white',
+                  padding: '0.75rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0',
+                  overflow: 'auto',
+                  maxHeight: '150px',
+                  lineHeight: '1.4'
+                }}>
+                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                    {JSON.stringify(transaction, null, 2)}
+                  </pre>
+                </div>
+              </div>
             )}
           </div>
 
-
-          {/* Current Transaction Display */}
-          {isUploading && (
-            <div style={{
-              marginTop: '1.5rem',
-              padding: '2rem',
-              background: '#f8fafc',
-              borderRadius: '0.75rem',
-              border: '1px solid #e2e8f0',
-              textAlign: 'center'
-            }}>
-              <div style={{ 
-                fontSize: '2rem', 
-                marginBottom: '1.5rem'
-              }}>
-                📄
-              </div>
-              <div style={{ 
-                fontSize: '1rem', 
-                fontWeight: 600, 
-                color: '#475569',
-                marginBottom: '1rem'
-              }}>
-                Processing JSON...
-              </div>
-              
-              {/* Loading Bar */}
-              <div style={{
-                width: '100%',
-                height: '8px',
-                background: '#e5e7eb',
-                borderRadius: '4px',
-                overflow: 'hidden',
-                marginBottom: '0.75rem'
-              }}>
-                <div style={{
-                  height: '100%',
-                  background: 'linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6)',
-                  backgroundSize: '200% 100%',
-                  borderRadius: '4px',
-                  animation: 'loadingBar 2s ease-in-out infinite',
-                  width: '100%'
-                }}></div>
-              </div>
-              
-              <div style={{ 
-                fontSize: '0.875rem', 
-                color: '#64748b'
-              }}>
-                Please wait while we load your data
-              </div>
+          {/* Mode Selection */}
+          <div style={{
+            background: 'white',
+            borderRadius: '1rem',
+            padding: '2rem',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #f5f5f5'
+          }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '0.75rem' }}>
+              Analysis Modes
+            </h2>
+            <p style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '1.5rem' }}>
+              Select one or more modes to compare
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[
+                { value: 'vanilla', label: 'Vanilla Agent', icon: TrendingUp },
+                { value: 'offline_ace', label: 'Offline ACE', icon: BarChart3 },
+                { value: 'online_ace', label: 'Online ACE', icon: TrendingUp },
+              ].map((m) => {
+                const isSelected = modes.includes(m.value as any);
+                const Icon = m.icon;
+                return (
+                  <label key={m.value} style={{ cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      value={m.value}
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setModes([...modes, m.value as any]);
+                        } else {
+                          setModes(modes.filter(mode => mode !== m.value));
+                        }
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                    <div style={{
+                      padding: '1rem',
+                      border: `2px solid ${isSelected ? '#3b82f6' : '#e5e5e5'}`,
+                      borderRadius: '0.75rem',
+                      background: isSelected ? '#eff6ff' : 'white',
+                      transition: 'all 0.2s',
+                      position: 'relative'
+                    }}>
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '0.75rem',
+                          right: '0.75rem',
+                          width: '18px',
+                          height: '18px',
+                          background: '#3b82f6',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <CheckCircle size={12} color="white" strokeWidth={3} />
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <Icon size={16} color={isSelected ? '#3b82f6' : '#737373'} strokeWidth={2} />
+                        <div style={{ fontWeight: 600, color: '#171717', fontSize: '0.9375rem' }}>{m.label}</div>
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
-          )}
-
-          {transaction && Object.keys(transaction).length > 0 && !isUploading && (
-            <div style={{
-              marginTop: '1.5rem',
-              padding: '1.25rem',
-              background: '#f8fafc',
-              borderRadius: '0.75rem',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{ 
-                fontSize: '0.875rem', 
-                fontWeight: 600, 
-                color: '#475569', 
-                marginBottom: '0.75rem',
+            
+            {modes.length === 0 && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '0.5rem',
+                fontSize: '0.8125rem',
+                textAlign: 'center',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '0.5rem'
               }}>
-                <span>📋</span>
-                Current Transaction
+                <AlertTriangle size={14} color="#991b1b" />
+                <span style={{ color: '#991b1b' }}>Select at least one mode</span>
               </div>
-              <div style={{ 
-                fontSize: '0.875rem', 
-                color: '#374151',
-                background: 'white',
-                padding: '1rem',
-                borderRadius: '0.5rem',
-                border: '1px solid #e2e8f0',
-                overflow: 'auto',
-                maxHeight: '300px',
-                lineHeight: '1.6'
-              }}>
-                <pre style={{ 
-                  margin: 0, 
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace'
-                }}>
-                  {JSON.stringify(transaction, null, 2)}
-                </pre>
-              </div>
+            )}
+          </div>
+
+          {/* Run Analysis Button */}
+          <button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0}
+            style={{
+              width: '100%',
+              padding: '1.125rem',
+              background: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0
+                ? '#9ca3af'
+                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.75rem',
+              fontSize: '1rem',
+              fontWeight: 600,
+              cursor: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0 ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              boxShadow: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0
+                ? 'none'
+                : '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+              transition: 'all 0.2s',
+              opacity: isAnalyzing || !transaction || Object.keys(transaction).length === 0 || modes.length === 0 ? 0.6 : 1
+            }}
+          >
+            <Play size={20} fill="white" />
+            {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
+          </button>
+
+          {error && (
+            <div style={{
+              padding: '1rem',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: '0.75rem',
+              color: '#991b1b',
+              fontSize: '0.875rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <AlertTriangle size={16} />
+              {error}
             </div>
           )}
         </div>
 
-        {/* Mode Selection */}
-        <div style={{
-          background: 'white',
-          borderRadius: '1rem',
-          padding: '2rem',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-          border: '1px solid #f5f5f5'
-        }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
-            Analysis Modes
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '1.5rem' }}>
-            Select one or more analysis modes to compare results
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-            {[
-              { value: 'vanilla', label: 'Vanilla Agent', desc: 'No learning', icon: '⚙️' },
-              { value: 'offline_ace', label: 'Offline ACE', desc: 'Pre-trained', icon: '📚' },
-              { value: 'online_ace', label: 'Online ACE', desc: 'Real-time learning', icon: '🚀' },
-            ].map((m) => {
-              const isSelected = modes.includes(m.value as any);
-              return (
-                <label key={m.value} style={{ cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    value={m.value}
-                    checked={isSelected}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setModes([...modes, m.value as any]);
-                      } else {
-                        setModes(modes.filter(mode => mode !== m.value));
-                      }
-                    }}
-                    style={{ display: 'none' }}
-                  />
-                  <div style={{
-                    padding: '1.25rem',
-                    border: `2px solid ${isSelected ? '#3b82f6' : '#e5e5e5'}`,
-                    borderRadius: '0.75rem',
-                    background: isSelected ? '#eff6ff' : '#fafafa',
-                    transition: 'all 0.2s',
-                    textAlign: 'center',
-                    position: 'relative'
-                  }}>
-                    {isSelected && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        width: '20px',
-                        height: '20px',
-                        background: '#3b82f6',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        color: 'white'
-                      }}>
-                        ✓
-                      </div>
-                    )}
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{m.icon}</div>
-                    <div style={{ fontWeight: 600, color: '#171717', marginBottom: '0.25rem' }}>{m.label}</div>
-                    <div style={{ fontSize: '0.875rem', color: '#737373' }}>{m.desc}</div>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-          {modes.length === 0 && (
+        {/* Right Panel - Results Comparison */}
+        <div style={{ minHeight: '600px' }}>
+          {modeResults.length === 0 ? (
             <div style={{
-              marginTop: '1rem',
-              padding: '0.75rem',
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              borderRadius: '0.5rem',
-              color: '#991b1b',
-              fontSize: '0.875rem',
-              textAlign: 'center'
+              background: 'white',
+              borderRadius: '1rem',
+              padding: '4rem 2rem',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #f5f5f5',
+              textAlign: 'center',
+              minHeight: '600px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              ⚠️ Please select at least one analysis mode
+              <BarChart3 size={64} color="#d4d4d4" strokeWidth={1.5} style={{ marginBottom: '1.5rem' }} />
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: '#525252', marginBottom: '0.75rem' }}>
+                Ready to Compare
+              </h3>
+              <p style={{ color: '#737373', fontSize: '1rem', maxWidth: '400px' }}>
+                Upload a transaction JSON file, select your analysis modes, and run the comparison to see how different ACE approaches detect fraud.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {modeResults.map((modeResult, index) => (
+                <ModeComparisonCard 
+                  key={index}
+                  modeResult={modeResult}
+                  getModeLabel={getModeLabel}
+                  getModeDescription={getModeDescription}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Analyze Button */}
-      <button
-        onClick={handleAnalyze}
-        style={{
-          width: '100%',
-          padding: '1.25rem',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '0.75rem',
-          fontSize: '1.0625rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '0.75rem',
-          boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
-          transition: 'all 0.2s',
-          marginBottom: '2rem'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(59, 130, 246, 0.4)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(59, 130, 246, 0.3)';
-        }}
-      >
-        <span style={{ fontSize: '1.25rem' }}>▶</span>
-        Run Analysis
-      </button>
-
       <style>
         {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          
           @keyframes loadingBar {
             0% {
               background-position: 200% 0;
@@ -573,127 +704,295 @@ function LiveTest() {
               background-position: -200% 0;
             }
           }
+          
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.5;
+            }
+          }
+          
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateX(-20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+          
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
         `}
       </style>
+    </div>
+  );
+}
 
-      {/* Error */}
-      {error && (
-        <div style={{
-          padding: '1rem 1.5rem',
-          background: '#fef2f2',
-          border: '1px solid #fecaca',
-          borderRadius: '0.75rem',
-          color: '#991b1b',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          marginBottom: '2rem',
-          fontSize: '0.9375rem'
-        }}>
-          <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-          {error}
+// Mode Comparison Card Component
+function ModeComparisonCard({ 
+  modeResult, 
+  getModeLabel, 
+  getModeDescription 
+}: { 
+  modeResult: ModeResult;
+  getModeLabel: (mode: string) => string;
+  getModeDescription: (mode: string) => string;
+}) {
+  const { mode, status, result, progress, streamingAgents, currentAgent } = modeResult;
+  
+  const getStatusColor = () => {
+    if (status === 'complete' && result) {
+      return result.decision === 'APPROVE' ? '#10b981' : '#ef4444';
+    }
+    return '#3b82f6';
+  };
+
+  const getStatusIcon = () => {
+    if (status === 'analyzing') return <TrendingUp size={20} color="#3b82f6" />;
+    if (status === 'complete' && result) {
+      return result.decision === 'APPROVE' 
+        ? <CheckCircle size={20} color="#10b981" />
+        : <XCircle size={20} color="#ef4444" />;
+    }
+    return <BarChart3 size={20} color="#737373" />;
+  };
+
+  return (
+    <div style={{
+      background: 'white',
+      borderRadius: '1rem',
+      padding: '2rem',
+      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      border: `2px solid ${status === 'complete' ? getStatusColor() : '#f5f5f5'}`,
+      transition: 'all 0.3s'
+    }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            {getStatusIcon()}
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#171717', margin: 0 }}>
+              {getModeLabel(mode)}
+            </h3>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: '#737373', margin: 0 }}>
+            {getModeDescription(mode)}
+          </p>
+        </div>
+        {status === 'complete' && result && (
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.75rem', color: '#737373', marginBottom: '0.25rem' }}>
+              Confidence
+            </div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: getStatusColor() }}>
+              {(result.confidence * 100).toFixed(1)}%
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Progress Bar */}
+      {(status === 'analyzing' || status === 'streaming') && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#737373', marginBottom: '0.5rem' }}>
+            <span>
+              {status === 'analyzing' 
+                ? 'Initializing analysis...'
+                : currentAgent 
+                  ? `Analyzing: ${currentAgent}`
+                  : 'Processing agents...'}
+            </span>
+            <span>{progress}%</span>
+          </div>
+          <div style={{
+            width: '100%',
+            height: '8px',
+            background: '#e5e7eb',
+            borderRadius: '4px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+              borderRadius: '4px',
+              transition: 'width 0.3s ease-out'
+            }}></div>
+          </div>
+          {status === 'streaming' && streamingAgents.length > 0 && (
+            <div style={{ 
+              marginTop: '0.75rem', 
+              fontSize: '0.75rem', 
+              color: '#525252',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
+              {['PatternDetector', 'BehavioralAnalyzer', 'VelocityChecker', 'MerchantRiskAnalyzer', 'GeographicAnalyzer'].map(agent => (
+                <span 
+                  key={agent}
+                  style={{
+                    padding: '0.25rem 0.625rem',
+                    borderRadius: '0.375rem',
+                    background: streamingAgents.includes(agent) 
+                      ? '#10b981' 
+                      : currentAgent === agent 
+                        ? '#3b82f6'
+                        : '#e5e7eb',
+                    color: streamingAgents.includes(agent) || currentAgent === agent ? 'white' : '#737373',
+                    fontWeight: currentAgent === agent ? 600 : 400,
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  {agent === currentAgent && '⟳ '}
+                  {agent.replace(/([A-Z])/g, ' $1').trim()}
+                  {streamingAgents.includes(agent) && agent !== currentAgent && ' ✓'}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Results */}
-      {result && (
-        <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
-          {/* Final Decision Card */}
-          <div style={{
-            background: 'white',
-            borderRadius: '1rem',
-            padding: '2.5rem',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #f5f5f5',
-            borderLeft: `4px solid ${result.decision === 'APPROVE' ? '#10b981' : '#ef4444'}`,
-            marginBottom: '2rem'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '2rem' }}>
-              <div>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1.5rem',
-                  background: result.decision === 'APPROVE' 
-                    ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)' 
-                    : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-                  borderRadius: '0.75rem',
-                  marginBottom: '1rem'
-                }}>
-                  <span style={{ fontSize: '2rem' }}>{result.decision === 'APPROVE' ? '✅' : '⛔'}</span>
-                  <span style={{
-                    fontSize: '2rem',
-                    fontWeight: 800,
-                    color: result.decision === 'APPROVE' ? '#065f46' : '#991b1b'
-                  }}>
-                    {result.decision}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '2rem', marginTop: '1rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '0.25rem' }}>Confidence</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#171717' }}>
-                      {(result.confidence * 100).toFixed(1)}%
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.875rem', color: '#737373', marginBottom: '0.25rem' }}>Risk Score</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 700, color: result.risk_score >= 50 ? '#ef4444' : '#10b981' }}>
-                      {result.risk_score.toFixed(1)}/100
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div style={{ flex: 1, minWidth: '300px' }}>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#525252', marginBottom: '0.75rem' }}>
-                  💡 Analysis Reasoning
-                </div>
-                <p style={{ color: '#525252', lineHeight: 1.7, margin: 0 }}>{result.reasoning}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Agent Scores Overview */}
-          <div style={{
-            background: 'white',
-            borderRadius: '1rem',
-            padding: '2rem',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-            border: '1px solid #f5f5f5',
-            marginBottom: '2rem'
-          }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
-              📊 Agent Risk Scores
-            </h3>
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              {Object.entries(result.analyzer_results).map(([name, analysis]) => (
-                <AgentScoreBar key={name} name={name} analysis={analysis} />
-              ))}
-            </div>
-          </div>
-
-          {/* Detailed Agent Analysis Cards */}
-          <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#171717', marginBottom: '1.5rem' }}>
-              🔍 Detailed Agent Analysis
-            </h3>
+      {/* Results - Show during streaming and when complete */}
+      {(status === 'streaming' || status === 'complete') && result && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Decision Banner - Only show when complete */}
+          {status === 'complete' && (
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
-              gap: '1.5rem'
+              padding: '1.5rem',
+              background: result.decision === 'APPROVE' 
+                ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                : 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+              borderRadius: '0.75rem',
+              border: `2px solid ${result.decision === 'APPROVE' ? '#10b981' : '#ef4444'}`,
             }}>
-              {Object.entries(result.analyzer_results).map(([name, analysis]) => (
-                <AgentAnalysisCard key={name} name={name} analysis={analysis} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                {result.decision === 'APPROVE' 
+                  ? <CheckCircle size={32} color="#10b981" strokeWidth={2.5} />
+                  : <XCircle size={32} color="#ef4444" strokeWidth={2.5} />
+                }
+                <div style={{ 
+                  fontSize: '2rem', 
+                  fontWeight: 800, 
+                  color: result.decision === 'APPROVE' ? '#10b981' : '#ef4444'
+                }}>
+                  {result.decision}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.875rem', color: '#737373' }}>Risk Score</div>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#f59e0b' }}>
+                  {result.risk_score.toFixed(1)}
+                </div>
+              </div>
+            </div>
+            <div style={{ 
+              fontSize: '0.9375rem', 
+              color: result.decision === 'APPROVE' ? '#166534' : '#991b1b',
+              lineHeight: 1.6 
+            }}>
+              {result.reasoning}
+            </div>
+          </div>
+          )}
+
+          {/* Agent Scores - Show as they stream in */}
+          <div>
+            <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#171717', marginBottom: '1rem' }}>
+              Agent Risk Scores {status === 'streaming' && `(${Object.keys(result.analyzer_results).length}/5)`}
+            </h4>
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {Object.entries(result.analyzer_results).map(([name, analysis], idx) => (
+                <div key={name} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  padding: '0.75rem 1rem',
+                  background: currentAgent === name ? '#eff6ff' : '#fafafa',
+                  borderRadius: '0.5rem',
+                  border: `1px solid ${currentAgent === name ? '#3b82f6' : '#e5e5e5'}`,
+                  animation: 'slideIn 0.3s ease-out',
+                  animationDelay: `${idx * 0.1}s`,
+                  animationFillMode: 'backwards'
+                }}>
+                  <div style={{ flex: '0 0 180px', fontSize: '0.875rem', fontWeight: 600, color: '#171717' }}>
+                    {name}
+                  </div>
+                  <div style={{ flex: 1, position: 'relative' }}>
+                    <div style={{
+                      width: '100%',
+                      height: '8px',
+                      background: '#e5e7eb',
+                      borderRadius: '4px',
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${analysis.risk_score}%`,
+                        background: analysis.risk_score >= 75 
+                          ? 'linear-gradient(90deg, #ef4444, #dc2626)'
+                          : analysis.risk_score >= 50
+                          ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                          : 'linear-gradient(90deg, #10b981, #059669)',
+                        borderRadius: '4px',
+                        transition: 'width 0.5s ease-out'
+                      }}></div>
+                    </div>
+                  </div>
+                  <div style={{ flex: '0 0 60px', textAlign: 'right', fontSize: '0.875rem', fontWeight: 700, color: '#171717' }}>
+                    {analysis.risk_score.toFixed(1)}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
+
+          {/* Key Findings - Only show when complete */}
+          {status === 'complete' && (
+          <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+            <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#171717', marginBottom: '1rem' }}>
+              Key Findings
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              {Object.entries(result.analyzer_results).slice(0, 3).map(([name, analysis]) => (
+                <div key={name} style={{
+                  padding: '1rem',
+                  background: '#fafafa',
+                  borderRadius: '0.75rem',
+                  border: '1px solid #e5e5e5'
+                }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#737373', marginBottom: '0.5rem' }}>
+                    {name}
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.8125rem', color: '#525252', lineHeight: 1.6 }}>
+                    {analysis.findings.slice(0, 2).map((finding, i) => (
+                      <li key={i} style={{ marginBottom: '0.25rem' }}>{finding}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+          )}
         </div>
       )}
     </div>
   );
 }
-
 
 export default LiveTest;

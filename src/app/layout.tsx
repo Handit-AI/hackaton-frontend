@@ -2,6 +2,7 @@
 // Minimalist design with clean navigation
 
 import { Link, useLocation } from 'react-router-dom'
+import { Home, FlaskConical, BarChart3, BookOpen } from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -30,24 +31,35 @@ function Layout({ children }: LayoutProps) {
         }}>
           {/* Logo */}
           <Link to="/" style={{
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: '#3b82f6',
-            letterSpacing: '-0.02em',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.75rem'
           }}>
-            <span style={{ fontSize: '1.75rem' }}>🛡️</span>
-            ACE Fraud Detection
+            <img 
+              src="/src/assets/svg/logo_handit.svg" 
+              alt="Handit AI Logo" 
+              style={{
+                height: '140px',
+                width: 'auto',
+                objectFit: 'contain'
+              }}
+            />
+            <span style={{ 
+              fontSize: '0.875rem', 
+              fontWeight: 500, 
+              color: '#737373',
+              letterSpacing: '0.025em'
+            }}>
+              Self Improving Detection
+            </span>
           </Link>
 
           {/* Navigation Links */}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <NavLink to="/" label="Home" icon="🏠" active={location.pathname === '/'} />
-            <NavLink to="/live-test" label="Live Test" icon="🧪" active={location.pathname === '/live-test'} />
-            <NavLink to="/experiments" label="Experiments" icon="📊" active={location.pathname === '/experiments'} />
-            <NavLink to="/playbook" label="Playbook" icon="📖" active={location.pathname === '/playbook'} />
+            <NavLink to="/" label="Home" icon={<Home size={18} strokeWidth={2} />} active={location.pathname === '/'} />
+            <NavLink to="/live-test" label="Live Test" icon={<FlaskConical size={18} strokeWidth={2} />} active={location.pathname === '/live-test'} />
+            <NavLink to="/experiments" label="Experiments" icon={<BarChart3 size={18} strokeWidth={2} />} active={location.pathname === '/experiments'} />
+            <NavLink to="/playbook" label="Playbook" icon={<BookOpen size={18} strokeWidth={2} />} active={location.pathname === '/playbook'} />
           </div>
         </div>
       </nav>
@@ -71,7 +83,7 @@ function Layout({ children }: LayoutProps) {
           color: '#737373',
           fontSize: '0.875rem'
         }}>
-          <p>Built with ❤️ for Hackathon 2025 | Multi-Agent Fraud Detection System</p>
+          <p>Hackathon 2025 | Multi-Agent Fraud Detection System</p>
         </div>
       </footer>
     </div>
@@ -81,7 +93,7 @@ function Layout({ children }: LayoutProps) {
 interface NavLinkProps {
   to: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   active: boolean;
 }
 
@@ -116,7 +128,7 @@ function NavLink({ to, label, icon, active }: NavLinkProps) {
         }
       }}
     >
-      <span style={{ fontSize: '1.125rem' }}>{icon}</span>
+      {icon}
       <span>{label}</span>
     </Link>
   );
